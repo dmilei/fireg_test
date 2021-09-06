@@ -1,0 +1,58 @@
+version: '3.7'
+
+services:
+
+  #MySQL Service
+  fireg-db:
+    image: mysql:5.7
+    container_name: fireg-db
+    restart: unless-stopped
+    tty: true
+    ports:
+      - 9001:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: laravel
+      MYSQL_DATABASE: laravel
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: laravel
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    healthcheck:
+      test: "/usr/bin/mysql --user=laravel --password=laravel --execute \"SHOW DATABASES;\""
+      interval: 3s
+      timeout: 2s
+      retries: 5
+    volumes:
+      - ./build/backend/my.cnf:/etc/mysql/my.cnf
+      - ./app/storage/app:/var/www/html/public/storage/
+    networks:
+      - fireg
+
+  #Backend Service - Laravel
+  fireg-app:
+    build:
+      context: .
+      dockerfile: build/backend/Dockerfile
+      target: local
+    depends_on:
+      - fireg-db
+    container_name: fireg-app
+    image: fireg-app:latest
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: app
+      SERVICE_TAGS: dev
+    working_dir: /var/www/html
+    ports:
+      - 9000:9000
+    volumes:
+      - ./app:/var/www/html
+    networks:
+      - fireg
+
+
+#Docker Networks
+networks:
+  fireg:
+    name: fireg
